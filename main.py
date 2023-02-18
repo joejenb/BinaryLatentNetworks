@@ -63,7 +63,7 @@ def test(model, test_loader):
             pred_error = cross_entropy_loss(pred_label, label)
             loss = pred_error
 
-            train_error += pred_error.item()
+            test_error += pred_error.item()
 
     wandb.log({
             "Test Error": test_error / len(test_loader.dataset)
