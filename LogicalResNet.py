@@ -23,9 +23,9 @@ class LogicalResNet(ResNet):
         features = self._forward_impl(x)
         binary_features = features
 
-        output = binary_features
+        output = F.relu(binary_features)
         for formulas in self.logical_tree:
-            output = formulas(output)
+            output = F.relu(formulas(output))
         
         return output
 
