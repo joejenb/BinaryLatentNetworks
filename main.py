@@ -73,7 +73,7 @@ def test(model, config, test_loader):
 
     wandb.log({
             "Test Error": test_error / len(test_loader),
-            "Train Accuracy": (test_accuracy) / len(test_loader)
+            "Test Accuracy": (test_accuracy) / len(test_loader)
         })
 
 
