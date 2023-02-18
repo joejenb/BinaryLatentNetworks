@@ -64,7 +64,7 @@ def get_data_loaders(config, PATH):
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=config.batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=config.batch_size, shuffle=False)
     
-    return train_loader, val_loader, test_loader, num_classes
+    return train_loader, val_loader, test_loader
 
         
 
