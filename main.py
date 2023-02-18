@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn as nn
+from torchmetrics.functional.classification import accuracy
 
 import argparse
 
@@ -23,6 +24,7 @@ def train(model, train_loader, optimiser, scheduler):
 
     model.train()
     train_error = 0
+    train_accuracy = 0
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
     for X, label in train_loader:
@@ -40,10 +42,12 @@ def train(model, train_loader, optimiser, scheduler):
         optimiser.step()
         
         train_error += pred_error.item()
+        train_accuracy += accuracy(pred_label, label, task="multiclass")
 
     scheduler.step()
     wandb.log({
-        "Train Error": (train_error) / len(train_loader)
+        "Train Error": (train_error) / len(train_loader),
+        "Train Accuracy": (train_accuracy) / len(train_loader)
     })
 
 
@@ -64,9 +68,11 @@ def test(model, test_loader):
             loss = pred_error
 
             test_error += pred_error.item()
+            test_accuracy += accuracy(pred_label, label, task="multiclass")
 
     wandb.log({
-            "Test Error": test_error / len(test_loader)
+            "Test Error": test_error / len(test_loader),
+            "Train Accuracy": (test_accuracy) / len(test_loader)
         })
 
 
