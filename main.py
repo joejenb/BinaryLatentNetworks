@@ -43,7 +43,7 @@ def train(model, train_loader, optimiser, scheduler):
 
     scheduler.step()
     wandb.log({
-        "Train Error": (train_error) / len(train_loader.dataset)
+        "Train Error": (train_error) / len(train_loader)
     })
 
 
@@ -66,7 +66,7 @@ def test(model, test_loader):
             test_error += pred_error.item()
 
     wandb.log({
-            "Test Error": test_error / len(test_loader.dataset)
+            "Test Error": test_error / len(test_loader)
         })
 
 
