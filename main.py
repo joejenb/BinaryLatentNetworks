@@ -20,7 +20,7 @@ from configs.cifar10_32_config import config
 wandb.init(project="LogicalResNet", config=config)
 config = MakeConfig(config)
 
-def train(model, train_loader, optimiser, scheduler):
+def train(model, config, train_loader, optimiser, scheduler):
 
     model.train()
     train_error = 0
@@ -42,7 +42,7 @@ def train(model, train_loader, optimiser, scheduler):
         optimiser.step()
         
         train_error += pred_error.item()
-        train_accuracy += accuracy(pred_label, label, task="multiclass")
+        train_accuracy += accuracy(pred_label, label, task="multiclass", num_classes=config.num_classes)
 
     scheduler.step()
     wandb.log({
@@ -51,10 +51,11 @@ def train(model, train_loader, optimiser, scheduler):
     })
 
 
-def test(model, test_loader):
+def test(model, config, test_loader):
     # Recall Memory
     model.eval() 
     test_error = 0
+    test_accuracy = 0
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
     with torch.no_grad():
@@ -68,7 +69,7 @@ def test(model, test_loader):
             loss = pred_error
 
             test_error += pred_error.item()
-            test_accuracy += accuracy(pred_label, label, task="multiclass")
+            test_accuracy += accuracy(pred_label, label, task="multiclass", num_classes=config.num_classes)
 
     wandb.log({
             "Test Error": test_error / len(test_loader),
@@ -100,10 +101,10 @@ def main():
 
     for epoch in range(config.epochs):
 
-        train(model, train_loader, optimiser, scheduler)
+        train(model, config, train_loader, optimiser, scheduler)
 
         if not epoch % 5:
-            test(model, test_loader)
+            test(model, config, test_loader)
 
         if not epoch % 5:
             torch.save(model.state_dict(), output_location)
