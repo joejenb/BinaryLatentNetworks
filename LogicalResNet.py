@@ -27,6 +27,6 @@ class LogicalResNet(ResNet):
         for formulas in self.logical_tree[:-1]:
             output = F.relu(formulas(output))
         
-        return formulas[-1](output)
+        return self.logical_tree[-1](output)
 
 
