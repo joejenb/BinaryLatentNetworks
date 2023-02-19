@@ -23,7 +23,7 @@ class LogicalResNet(ResNet):
             torch.nn.init.normal_(formulas.weight, mean=0.5, std=0.5)
         
     def forward(self, x):
-        features = F.relu(self._forward_impl(x))
+        features = F.tanh(self._forward_impl(x))
         binary_features = straight_through_round(features)
 
         output = binary_features
@@ -34,7 +34,7 @@ class LogicalResNet(ResNet):
             rounded_weights = straight_through_round(formulas.weight)
             output = F.linear(output, rounded_weights)# - rounded_weights.size(dim=0) // 2
             print(output)
-            output = straight_through_round(F.sigmoid(output))
+            output = straight_through_round(F.tanh(output))
             print(output)
             print(formulas.weight)
             print(rounded_weights)
