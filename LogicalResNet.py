@@ -34,7 +34,7 @@ class LogicalResNet(ResNet):
             rounded_weights = straight_through_round(formulas.weight)
             output = F.linear(output, rounded_weights)# - rounded_weights.size(dim=0) // 2
             print(output)
-            output = straight_through_round(F.relu(output))
+            output = straight_through_round(F.sigmoid(output))
             print(output)
             print(formulas.weight)
             print(rounded_weights)
