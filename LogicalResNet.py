@@ -15,9 +15,12 @@ class LogicalResNet(ResNet):
                  groups, width_per_group, replace_stride_with_dilation, norm_layer)
 
         self.device = device
-        logical_body = [torch.nn.init.normal_(nn.Linear(num_features // (depth+1), num_features // (depth+2), bias=False), mean=0.5, std=0.5) for depth in range(tree_depth - 1)]
-        logical_head = [torch.nn.init.normal_(nn.Linear(num_features // tree_depth, num_classes, bias=False), mean=0.5, std=0.5)]
+        logical_body = [nn.Linear(num_features // (depth+1), num_features // (depth+2), bias=False) for depth in range(tree_depth - 1)]
+        logical_head = [nn.Linear(num_features // tree_depth, num_classes, bias=False)]
         self.logical_tree = nn.ModuleList(logical_body + logical_head)
+        
+        for formulas in self.logical_tree:
+            torch.nn.init.normal_(formulas.weight, mean=0.5, std=0.5)
         
     def forward(self, x):
         features = F.relu(self._forward_impl(x))
