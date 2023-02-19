@@ -32,7 +32,8 @@ class LogicalResNet(ResNet):
         # Out features is given by first dimension of weights matrix 
         for formulas in self.logical_tree[:-1]:
             rounded_weights = straight_through_round(formulas.weight)
-            output = F.linear(output, rounded_weights) - rounded_weights.size(dim=0) + 1
+            output = F.linear(output, rounded_weights) - rounded_weights.size(dim=0) // 2
+            print(output)
             output = straight_through_round(F.relu(output))
             print(output)
             print(formulas.weight)
