@@ -28,7 +28,7 @@ class LogicalResNet(ResNet):
         # Want to fire only if formula evaluates to true -> should sum to number of out features - 1
         # Out features is given by first dimension of weights matrix 
         for formulas in self.logical_tree[:-1]:
-            rounded_weights = straight_through_round(formulas.weights)
+            rounded_weights = straight_through_round(formulas.weight)
             output = F.linear(output, rounded_weights) - rounded_weights.size(dim=0) + 1
             output = straight_through_round(F.relu(formulas(output)))
         
