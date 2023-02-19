@@ -24,8 +24,9 @@ class LogicalResNet(ResNet):
         binary_features = straight_through_round(features)
 
         output = binary_features
+        # Want to straight_through_round weights and then use cloned output in multiplication
         for formulas in self.logical_tree[:-1]:
-            output = F.relu(formulas(output))
+            output = straight_through_round(F.relu(formulas(output)))
         
         return self.logical_tree[-1](output)
 
