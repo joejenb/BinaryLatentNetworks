@@ -13,4 +13,4 @@ config["weight_decay"] = 0.0
 config["data_set"] = "CIFAR10"
 config["num_classes"] = 10
 config["num_features"] = 1000
-config["tree_depth"] = 8
+config["tree_depth"] = 4
