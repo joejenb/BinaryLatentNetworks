@@ -20,8 +20,8 @@ class LogicalResNet(ResNet):
         self.logical_tree = nn.ModuleList(logical_body + logical_head)
         
     def forward(self, x):
-        features = self._forward_impl(x)
-        binary_features = features
+        features = F.relu(self._forward_impl(x))
+        binary_features = straight_through_round(features)
 
         output = binary_features
         for formulas in self.logical_tree[:-1]:
