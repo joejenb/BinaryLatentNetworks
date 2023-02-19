@@ -33,12 +33,7 @@ class LogicalResNet(ResNet):
         for formulas in self.logical_tree[:-1]:
             rounded_weights = straight_through_round(formulas.weight)
             output = F.linear(output, rounded_weights)# - rounded_weights.size(dim=0) // 2
-            print(output)
             output = straight_through_round(F.tanh(output))
-            print(output)
-            print(formulas.weight)
-            print(rounded_weights)
-            print("\n")
         
         return self.logical_tree[-1](output)
 
