@@ -15,8 +15,8 @@ class LogicalResNet(ResNet):
                  groups, width_per_group, replace_stride_with_dilation, norm_layer)
 
         self.device = device
-        logical_body = [nn.Linear(num_features / (depth+1), num_features / (depth+2), bias=False) for depth in range(tree_depth - 1)]
-        logical_head = [nn.Linear(num_features / tree_depth, num_classes, bias=False)]
+        logical_body = [nn.Linear(num_features // (depth+1), num_features // (depth+2), bias=False) for depth in range(tree_depth - 1)]
+        logical_head = [nn.Linear(num_features // tree_depth, num_classes, bias=False)]
         self.logical_tree = nn.ModuleList(logical_body + logical_head)
         
     def forward(self, x):
