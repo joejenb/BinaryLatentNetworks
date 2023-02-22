@@ -52,8 +52,8 @@ def get_data_loaders(config, PATH):
         config.data_variance = 1
 
     train_set = LightlyDataset.from_torch_dataset(train_set)
-    val_set = LightlyDataset.from_torch_dataset(val_set, transforms=[torchvision.transforms.ToTensor()])
-    test_set = LightlyDataset.from_torch_dataset(test_set, transforms=[torchvision.transforms.ToTensor()])
+    val_set = LightlyDataset.from_torch_dataset(val_set, transform=[torchvision.transforms.ToTensor()])
+    test_set = LightlyDataset.from_torch_dataset(test_set, transform=[torchvision.transforms.ToTensor()])
 
     collate_fn = SimCLRCollateFunction(input_size=32)
 
