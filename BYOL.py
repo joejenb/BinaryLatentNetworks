@@ -13,6 +13,8 @@ class BYOL(nn.Module):
     def __init__(self, num_features=1000, num_classes=10, device='cpu'):
         super().__init__()
 
+        self.device = device
+
         resnet = torchvision.models.resnet18(num_classes=num_features)
         self.backbone = nn.Sequential(*list(resnet.children())[:-1])
         self.projection_head = BYOLProjectionHead(num_features, 1024, 256)
