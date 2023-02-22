@@ -11,43 +11,60 @@ import os
 
 import wandb
 
-from LogicalResNet import LogicalResNet
+from BYOL import BYOL
 
 from utils import get_data_loaders, load_from_checkpoint, MakeConfig
 
 from configs.cifar10_32_config import config
 
-wandb.init(project="LogicalResNet", config=config)
+from lightly.loss import NegativeCosineSimilarity
+from lightly.models.utils import update_momentum
+from lightly.utils.scheduler import cosine_schedule
+
+wandb.init(project="Binary-BYOL", config=config)
 config = MakeConfig(config)
 
-def train(model, config, train_loader, optimiser, scheduler):
+def train(model, config, train_loader, momentum_val, optimiser, scheduler):
 
     model.train()
     train_error = 0
     train_accuracy = 0
+    
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
+    negative_cosine_similarity = NegativeCosineSimilarity()
 
-    for X, label in train_loader:
-        X = X.to(model.device)
-        label = label.to(model.device)
 
-        optimiser.zero_grad()
+    for (x0, x1), t, _ in train_loader:
+        update_momentum(model.backbone, model.backbone_momentum, m=momentum_val)
+        update_momentum(
+            model.projection_head, model.projection_head_momentum, m=momentum_val
+        )
 
-        pred_label = model(X)
+        x0 = x0.to(model.device)
+        x1 = x1.to(model.device)
 
-        pred_error = cross_entropy_loss(pred_label, label)
-        loss = pred_error
+        c0, p0 = model(x0)
+        z0 = model.forward_momentum(x0)
+
+        c1, p1 = model(x1)
+        z1 = model.forward_momentum(x1)
+
+        loss = 0.5 * (negative_cosine_similarity(p0, z1) + negative_cosine_similarity(p1, z0))
+        loss += 0.5 * (cross_entropy_loss(c0, t) + cross_entropy_loss(c1, t))
+
+        train_error += loss.detach()
+
+        train_accuracy += 0.5 * accuracy(c0, t, task="multiclass", num_classes=config.num_classes)
+        train_accuracy += 0.5 * accuracy(c1, t, task="multiclass", num_classes=config.num_classes)
 
         loss.backward()
         optimiser.step()
-        
-        train_error += pred_error.item()
-        train_accuracy += accuracy(pred_label, label, task="multiclass", num_classes=config.num_classes)
+        optimiser.zero_grad()
 
     scheduler.step()
     wandb.log({
-        "Train Error": (train_error) / len(train_loader),
-        "Train Accuracy": (train_accuracy) / len(train_loader)
+        "Train Error": train_error / len(train_loader),
+        "Train Accuracy": train_accuracy / len(train_loader)
     })
 
 
@@ -56,20 +73,23 @@ def test(model, config, test_loader):
     model.eval() 
     test_error = 0
     test_accuracy = 0
+
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
     with torch.no_grad():
-        for X, label in test_loader:
-            X = X.to(model.device)
-            label = label.to(model.device)
 
-            pred_label = model(X)
+        for x, t, _ in test_loader:
 
-            pred_error = cross_entropy_loss(pred_label, label)
-            loss = pred_error
+            x = x.to(model.device)
 
-            test_error += pred_error.item()
-            test_accuracy += accuracy(pred_label, label, task="multiclass", num_classes=config.num_classes)
+            c, _ = model(x)
+
+            loss = cross_entropy_loss(c, t)
+
+            train_error += loss.detach()
+
+            train_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
+
 
     wandb.log({
             "Test Error": test_error / len(test_loader),
@@ -91,17 +111,19 @@ def main():
     checkpoint_location = f'checkpoints/{config.data_set}-{config.image_size}.ckpt'
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
-    model = LogicalResNet(tree_depth=config.tree_depth, num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
+    model = BYOL(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
-    optimiser = optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
     scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=config.gamma)
 
     wandb.watch(model, log="all")
 
     for epoch in range(config.epochs):
 
-        train(model, config, train_loader, optimiser, scheduler)
+        momentum_val = cosine_schedule(epoch, config.epochs, 0.996, 1)
+
+        train(model, config, train_loader, momentum_val, optimiser, scheduler)
 
         if not epoch % 5:
             test(model, config, test_loader)

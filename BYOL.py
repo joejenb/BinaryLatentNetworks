@@ -1,40 +1,39 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision.models.resnet import ResNet, BasicBlock
+from torch import nn
+import torchvision
+import copy
 
-import numpy as np
+from lightly.models.modules import BYOLProjectionHead, BYOLPredictionHead
+from lightly.models.utils import deactivate_requires_grad
 
 from utils import straight_through_round
 
-class LogicalResNet(ResNet):
-    
-    def __init__(self, block=BasicBlock, layers=[2, 2, 2, 2], tree_depth=10, num_features=10000, num_classes=1000, zero_init_residual=False,
-                 groups=1, width_per_group=64, replace_stride_with_dilation=None, norm_layer=None, device="cpu"):
-        super(LogicalResNet, self).__init__(block, layers, num_features, zero_init_residual,
-                 groups, width_per_group, replace_stride_with_dilation, norm_layer)
 
-        self.device = device
-        logical_body = [nn.Linear(num_features // (depth+1), num_features // (depth+2), bias=False) for depth in range(tree_depth - 1)]
-        logical_head = [nn.Linear(num_features // tree_depth, num_classes, bias=False)]
-        self.logical_tree = nn.ModuleList(logical_body + logical_head)
-        
-        for formulas in self.logical_tree:
-            torch.nn.init.normal_(formulas.weight, mean=0.5, std=0.5)
-        
+class BYOL(nn.Module):
+    def __init__(self, num_features=1000, num_classes=10, device='cpu'):
+        super().__init__()
+
+        resnet = torchvision.models.resnet18(num_classes=num_features)
+        self.backbone = nn.Sequential(*list(resnet.children())[:-1])
+        self.projection_head = BYOLProjectionHead(num_features, 1024, 256)
+        self.prediction_head = BYOLPredictionHead(256, 1024, 256)
+        self.classification_head = BYOLPredictionHead(num_features, num_features // 2, num_classes)
+
+        self.backbone_momentum = copy.deepcopy(self.backbone)
+        self.projection_head_momentum = copy.deepcopy(self.projection_head)
+
+        deactivate_requires_grad(self.backbone_momentum)
+        deactivate_requires_grad(self.projection_head_momentum)
+
     def forward(self, x):
-        features = F.tanh(self._forward_impl(x))
-        binary_features = straight_through_round(features)
+        y = straight_through_round(self.backbone(x).flatten(start_dim=1))
+        z = self.projection_head(y)
+        p = self.prediction_head(z)
+        c = self.classification_head(y.detach())
+        return c, p
 
-        output = binary_features
-        # Want to straight_through_round weights and then use cloned output in multiplication
-        # Want to fire only if formula evaluates to true -> should sum to number of out features - 1
-        # Out features is given by first dimension of weights matrix 
-        for formulas in self.logical_tree[:-1]:
-            rounded_weights = straight_through_round(formulas.weight)
-            output = F.linear(output, rounded_weights)# - rounded_weights.size(dim=0) // 2
-            output = straight_through_round(F.tanh(output))
-        
-        return self.logical_tree[-1](output)
-
-
+    def forward_momentum(self, x):
+        y = self.backbone_momentum(x).flatten(start_dim=1)
+        z = self.projection_head_momentum(y)
+        z = z.detach()
+        return z

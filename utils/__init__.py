@@ -8,6 +8,8 @@ from torch.utils.data import random_split
 import torchvision
 from torchvision import transforms
 
+from lightly.data import LightlyDataset
+from lightly.data import SimCLRCollateFunction
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -38,29 +40,24 @@ def straight_through_round(X):
 
 def get_data_loaders(config, PATH):
     if config.data_set == "MNIST":
-        transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Resize(config.image_size),
-                transforms.Normalize((0.1307,), (0.3081,))
-            ])
-
-        train_set = torchvision.datasets.MNIST(root=PATH, train=True, download=True, transform=transform)
-        val_set = torchvision.datasets.MNIST(root=PATH, train=False, download=True, transform=transform)
-        test_set = torchvision.datasets.MNIST(root=PATH, train=False, download=True, transform=transform)
+        train_set = torchvision.datasets.MNIST(root=PATH, train=True, download=True)
+        val_set = torchvision.datasets.MNIST(root=PATH, train=False, download=True)
+        test_set = torchvision.datasets.MNIST(root=PATH, train=False, download=True)
         config.data_variance = 1
 
     elif config.data_set == "CIFAR10":
-        transform=transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Resize(config.image_size),
-                transforms.Normalize((0.5,0.5,0.5), (1.0,1.0,1.0))
-            ])
-        train_set = torchvision.datasets.CIFAR10(root=PATH, train=True, download=True, transform=transform)
-        val_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True, transform=transform)
-        test_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True, transform=transform)
+        train_set = torchvision.datasets.CIFAR10(root=PATH, train=True, download=True)
+        val_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True)
+        test_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True)
         config.data_variance = 1
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=config.batch_size, shuffle=True)
+    train_set = LightlyDataset.from_torch_dataset(train_set)
+    val_set = LightlyDataset.from_torch_dataset(val_set)
+    test_set = LightlyDataset.from_torch_dataset(test_set)
+
+    collate_fn = SimCLRCollateFunction(input_size=32)
+
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=config.batch_size, collate_fn=collate_fn, shuffle=True, drop_last=True, num_workers=8)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=config.batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=config.batch_size, shuffle=False)
     
