@@ -88,9 +88,9 @@ def test(model, config, test_loader):
 
             loss = cross_entropy_loss(c, t)
 
-            train_error += loss.detach()
+            test_error += loss.detach()
 
-            train_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
+            test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
 
 
     wandb.log({
