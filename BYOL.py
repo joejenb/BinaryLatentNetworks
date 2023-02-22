@@ -35,7 +35,7 @@ class BYOL(nn.Module):
         return c, p
 
     def forward_momentum(self, x):
-        y = self.backbone_momentum(x).flatten(start_dim=1)
+        y = straight_through_round(self.backbone_momentum(x).flatten(start_dim=1))
         z = self.projection_head_momentum(y)
         z = z.detach()
         return z
