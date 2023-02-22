@@ -42,6 +42,7 @@ def train(model, config, train_loader, momentum_val, optimiser, scheduler):
 
         x0 = x0.to(model.device)
         x1 = x1.to(model.device)
+        t = t.to(model.device)
 
         c0, p0 = model(x0)
         z0 = model.forward_momentum(x0)
@@ -81,6 +82,7 @@ def test(model, config, test_loader):
         for x, t, _ in test_loader:
 
             x = x.to(model.device)
+            t = t.to(model.device)
 
             c, _ = model(x)
 
