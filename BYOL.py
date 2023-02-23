@@ -28,14 +28,16 @@ class BYOL(nn.Module):
         deactivate_requires_grad(self.projection_head_momentum)
 
     def forward(self, x):
-        y = straight_through_round(self.backbone(x).flatten(start_dim=1))
+        #y = straight_through_round(self.backbone(x).flatten(start_dim=1))
+        y = self.backbone(x).flatten(start_dim=1)
         z = self.projection_head(y)
         p = self.prediction_head(z)
         c = self.classification_head(y.detach())
         return c, p
 
     def forward_momentum(self, x):
-        y = straight_through_round(self.backbone_momentum(x).flatten(start_dim=1))
+        #y = straight_through_round(self.backbone_momentum(x).flatten(start_dim=1))
+        y = self.backbone_momentum(x).flatten(start_dim=1)
         z = self.projection_head_momentum(y)
         z = z.detach()
         return z
