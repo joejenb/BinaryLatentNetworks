@@ -7,11 +7,11 @@ import numpy as np
 
 from utils import straight_through_round
 
-class LogicalResNet(ResNet):
+class BinaryResNet(ResNet):
     
     def __init__(self, block=BasicBlock, layers=[2, 2, 2, 2], tree_depth=10, num_features=10000, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None, norm_layer=None, device="cpu"):
-        super(LogicalResNet, self).__init__(block, layers, num_features, zero_init_residual,
+        super(BinaryResNet, self).__init__(block, layers, num_features, zero_init_residual,
                  groups, width_per_group, replace_stride_with_dilation, norm_layer)
 
         self.device = device
@@ -23,18 +23,8 @@ class LogicalResNet(ResNet):
             torch.nn.init.normal_(formulas.weight, mean=0.5, std=0.5)
         
     def forward(self, x):
-        features = F.tanh(self._forward_impl(x))
-        binary_features = straight_through_round(features)
-
-        output = binary_features
-        # Want to straight_through_round weights and then use cloned output in multiplication
-        # Want to fire only if formula evaluates to true -> should sum to number of out features - 1
-        # Out features is given by first dimension of weights matrix 
-        for formulas in self.logical_tree[:-1]:
-            rounded_weights = straight_through_round(formulas.weight)
-            output = F.linear(output, rounded_weights)# - rounded_weights.size(dim=0) // 2
-            output = straight_through_round(F.tanh(output))
-        
-        return self.logical_tree[-1](output)
+        features = self._forward_impl(x)
+                
+        return self.logical_tree[-1](features)
 
 
