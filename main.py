@@ -11,47 +11,36 @@ import os
 
 import wandb
 
-from BYOL import BYOL
+from SimCLR import SimCLR
 
 from utils import get_data_loaders, load_from_checkpoint, MakeConfig
 
 from configs.cifar10_32_config import config
 
-from lightly.loss import NegativeCosineSimilarity
-from lightly.models.utils import update_momentum
-from lightly.utils.scheduler import cosine_schedule
+from lightly.loss import NTXentLoss
 
-wandb.init(project="Binary-BYOL", config=config)
+wandb.init(project="Binary-SimCLR", config=config)
 config = MakeConfig(config)
 
-def train(model, config, train_loader, momentum_val, optimiser, scheduler):
+def train(model, config, train_loader, optimiser, scheduler):
 
     model.train()
     train_error = 0
     train_accuracy = 0
     
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
-    negative_cosine_similarity = NegativeCosineSimilarity()
-
+    ntx_ent_loss = NTXentLoss()
 
     for (x0, x1), t, _ in train_loader:
-        update_momentum(model.backbone, model.backbone_momentum, m=momentum_val)
-        update_momentum(
-            model.projection_head, model.projection_head_momentum, m=momentum_val
-        )
 
         x0 = x0.to(model.device)
         x1 = x1.to(model.device)
         t = t.to(model.device)
 
-        c0, p0 = model(x0)
-        z0 = model.forward_momentum(x0)
+        c0, z0 = model(x0)
+        c1, z1 = model(x1)
 
-        c1, p1 = model(x1)
-        z1 = model.forward_momentum(x1)
-
-        loss = 0.5 * (negative_cosine_similarity(p0, z1) + negative_cosine_similarity(p1, z0))
-        loss += 0.5 * (cross_entropy_loss(c0, t) + cross_entropy_loss(c1, t))
+        loss = ntx_ent_loss(z0, z1)
 
         train_error += loss.detach()
 
@@ -113,7 +102,7 @@ def main():
     checkpoint_location = f'checkpoints/{config.data_set}-{config.image_size}.ckpt'
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
-    model = BYOL(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
+    model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
@@ -123,9 +112,7 @@ def main():
 
     for epoch in range(config.epochs):
 
-        momentum_val = cosine_schedule(epoch, config.epochs, 0.996, 1)
-
-        train(model, config, train_loader, momentum_val, optimiser, scheduler)
+        train(model, config, train_loader, optimiser, scheduler)
 
         if not epoch % 5:
             test(model, config, test_loader)
