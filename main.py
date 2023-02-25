@@ -11,15 +11,16 @@ import os
 
 import wandb
 
-from SimCLR import SimCLR
+#from SimCLR import SimCLR
+from SimCLR import BYOL
 
 from utils import get_data_loaders, load_from_checkpoint, MakeConfig
 
 from configs.cifar10_32_config import config
 
-from lightly.loss import NTXentLoss
+from lightly.loss import NegativeCosineSimilarity
 
-#wandb.init(project="Binary-SimCLR", config=config)
+wandb.init(project="Binary-SimCLR", config=config)
 config = MakeConfig(config)
 
 def train(model, config, train_loader, optimiser, scheduler):
@@ -29,7 +30,7 @@ def train(model, config, train_loader, optimiser, scheduler):
     train_accuracy = 0
     
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
-    ntx_ent_loss = NTXentLoss()
+    ntx_ent_loss = NegativeCosineSimilarity()
 
     for (x0, x1), t, _ in train_loader:
 
@@ -102,13 +103,13 @@ def main():
     checkpoint_location = f'checkpoints/{config.data_set}-{config.image_size}.ckpt'
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
-    model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
+    model = BYOL(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
     scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=config.gamma)
 
-    #wandb.watch(model, log="all")
+    wandb.watch(model, log="all")
 
     for epoch in range(config.epochs):
 
