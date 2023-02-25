@@ -19,7 +19,7 @@ from configs.cifar10_32_config import config
 
 from lightly.loss import NTXentLoss
 
-wandb.init(project="Binary-SimCLR", config=config)
+#wandb.init(project="Binary-SimCLR", config=config)
 config = MakeConfig(config)
 
 def train(model, config, train_loader, optimiser, scheduler):
@@ -40,7 +40,7 @@ def train(model, config, train_loader, optimiser, scheduler):
         c0, z0 = model(x0)
         c1, z1 = model(x1)
 
-        loss = ntx_ent_loss(z0, z1)
+        loss = ntx_ent_loss(z0, z1) + cross_entropy_loss(c0, t)
 
         train_error += loss.detach()
 
@@ -52,10 +52,10 @@ def train(model, config, train_loader, optimiser, scheduler):
         optimiser.zero_grad()
 
     scheduler.step()
-    wandb.log({
+    print({
         "Train Error": train_error / len(train_loader),
         "Train Accuracy": train_accuracy / len(train_loader)
-    })
+    }, "\n")
 
 
 def test(model, config, test_loader):
@@ -82,10 +82,10 @@ def test(model, config, test_loader):
             test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
 
 
-    wandb.log({
+    print({
             "Test Error": test_error / len(test_loader),
             "Test Accuracy": (test_accuracy) / len(test_loader)
-        })
+        }, "\n")
 
 
 def main():
@@ -108,7 +108,7 @@ def main():
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
     scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=config.gamma)
 
-    wandb.watch(model, log="all")
+    #wandb.watch(model, log="all")
 
     for epoch in range(config.epochs):
 
