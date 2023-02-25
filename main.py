@@ -11,14 +11,13 @@ import os
 
 import wandb
 
-#from SimCLR import SimCLR
-from SimCLR import BYOL
+from SimCLR import SimCLR
 
 from utils import get_data_loaders, load_from_checkpoint, MakeConfig
 
 from configs.cifar10_32_config import config
 
-from lightly.loss import NegativeCosineSimilarity
+from lightly.loss import NTXentLoss
 
 wandb.init(project="Binary-SimCLR", config=config)
 config = MakeConfig(config)
@@ -30,7 +29,7 @@ def train(model, config, train_loader, optimiser, scheduler):
     train_accuracy = 0
     
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
-    ntx_ent_loss = NegativeCosineSimilarity()
+    ntx_ent_loss = NTXentLoss()
 
     for (x0, x1), t, _ in train_loader:
 
@@ -103,7 +102,7 @@ def main():
     checkpoint_location = f'checkpoints/{config.data_set}-{config.image_size}.ckpt'
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
-    model = BYOL(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
+    model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)

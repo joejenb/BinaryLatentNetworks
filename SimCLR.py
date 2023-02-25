@@ -4,13 +4,11 @@ import torchvision
 import copy
 
 from lightly.models.modules import SimCLRProjectionHead
-from lightly.models.modules import BYOLProjectionHead
-from lightly.models.modules import BYOLPredictionHead
 from lightly.models.utils import deactivate_requires_grad
 
 from utils import straight_through_round
 
-'''class SimCLR(nn.Module):
+class SimCLR(nn.Module):
     def __init__(self, num_features=1000, num_classes=10, device='cpu'):
         super().__init__()
         resnet = torchvision.models.resnet18(num_classes=num_features)
@@ -24,7 +22,6 @@ from utils import straight_through_round
         z = self.projection_head(x)
         c = self.classification_head(z.detach())
         return c, z
-'''
 
 class BYOL(nn.Module):
     def __init__(self, num_features=1000, num_classes=10, device='cpu'):
