@@ -102,7 +102,7 @@ def main():
     checkpoint_location = f'checkpoints/{config.data_set}-{config.image_size}.ckpt'
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
-    model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
+    model = SimCLR(config, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
