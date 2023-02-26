@@ -19,6 +19,6 @@ class SimCLR(nn.Module):
 
     def forward(self, x):
         x, z = self.backbone(x)
-        z = self.projection_head(z.flatten(start_dim=1))
+        z = self.projection_head(z.flatten(start_dim=1).detach())
         c = self.classification_head(z.detach())
         return c, z, x
