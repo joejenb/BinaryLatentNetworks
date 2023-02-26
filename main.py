@@ -19,7 +19,7 @@ from configs.cifar10_32_config import config
 
 from lightly.loss import NTXentLoss
 
-wandb.init(project="Binary-SimCLR", config=config)
+wandb.init(project="Generative-SimCLR", config=config)
 config = MakeConfig(config)
 
 def train(model, config, train_loader, optimiser, scheduler):
@@ -37,10 +37,10 @@ def train(model, config, train_loader, optimiser, scheduler):
         x1 = x1.to(model.device)
         t = t.to(model.device)
 
-        c0, z0 = model(x0)
-        c1, z1 = model(x1)
+        c0, z0, y0 = model(x0)
+        c1, z1, y1 = model(x1)
 
-        loss = ntx_ent_loss(z0, z1) + cross_entropy_loss(c0, t)
+        loss = ntx_ent_loss(z0, z1) + cross_entropy_loss(c0, t) + 0.5 * (F.mse_loss(y0, x0) + F.mse_loss(y1, x1))
 
         train_error += loss.detach()
 
@@ -52,10 +52,10 @@ def train(model, config, train_loader, optimiser, scheduler):
         optimiser.zero_grad()
 
     scheduler.step()
-    print({
+    wandb.log({
         "Train Error": train_error / len(train_loader),
         "Train Accuracy": train_accuracy / len(train_loader)
-    }, "\n")
+    })
 
 
 def test(model, config, test_loader):
@@ -73,7 +73,7 @@ def test(model, config, test_loader):
             x = x.to(model.device)
             t = t.to(model.device)
 
-            c, _ = model(x)
+            c, _, _ = model(x)
 
             loss = cross_entropy_loss(c, t)
 
@@ -82,10 +82,10 @@ def test(model, config, test_loader):
             test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
 
 
-    print({
+    wandb.log({
             "Test Error": test_error / len(test_loader),
             "Test Accuracy": (test_accuracy) / len(test_loader)
-        }, "\n")
+        })
 
 
 def main():
