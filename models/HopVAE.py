@@ -6,8 +6,6 @@ import numpy as np
 
 from hflayers import HopfieldLayer
 
-from utils import get_prior, straight_through_round
-
 class Residual(nn.Module):
     def __init__(self, in_channels, num_hiddens, num_residual_hiddens):
         super(Residual, self).__init__()
