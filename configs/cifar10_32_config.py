@@ -1,6 +1,6 @@
 config = {}
-config["batch_size"] = 256
-config["epochs"] = 100             # number of epochs to train (default: 10)
+config["batch_size"] = 512
+config["epochs"] = 200             # number of epochs to train (default: 10)
 config["no_cuda"] = False         # disables CUDA training
 config["seed"] = 1265
 config["image_size"] = 32

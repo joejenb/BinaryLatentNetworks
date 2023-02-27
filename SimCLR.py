@@ -15,10 +15,10 @@ class SimCLR(nn.Module):
         self.device = device
         self.backbone = nn.Sequential(*list(resnet.children())[:-1])
         self.projection_head = SimCLRProjectionHead(512, 512, num_features)
-        self.classification_head = SimCLRProjectionHead(num_features, num_features // 2, num_classes)
+        #self.classification_head = SimCLRProjectionHead(num_features, num_features // 2, num_classes)
 
     def forward(self, x):
         x = self.backbone(x).flatten(start_dim=1)
         z = self.projection_head(x)
-        c = self.classification_head(z.detach())
+        c = None#self.classification_head(z.detach())
         return c, z

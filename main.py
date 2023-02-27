@@ -13,7 +13,7 @@ import wandb
 
 from SimCLR import SimCLR
 
-from utils import get_data_loaders, load_from_checkpoint, MakeConfig
+from utils import get_data_loaders, load_from_checkpoint, MakeConfig, KNNClassifier
 
 from configs.cifar10_32_config import config
 
@@ -26,7 +26,7 @@ def train(model, config, train_loader, optimiser, scheduler):
 
     model.train()
     train_error = 0
-    #log_dict = dict()
+    log_dict = dict()
     
     ntx_ent_loss = NTXentLoss()
 
@@ -36,46 +36,20 @@ def train(model, config, train_loader, optimiser, scheduler):
         x1 = x1.to(model.device)
         t = t.to(model.device)
 
-        c0, z0 = model(x0)
-        c1, z1 = model(x1)
+        _, z0 = model(x0)
+        _, z1 = model(x1)
 
         loss = ntx_ent_loss(z0, z1)
 
         train_error += loss.detach()
-        #log_dict["Train Error"] = train_error / len(train_loader)
+        log_dict["Train Error"] = train_error / len(train_loader)
 
         loss.backward()
         optimiser.step()
         optimiser.zero_grad()
 
     scheduler.step()
-    #wandb.log(log_dict)
-
-def train_classifier(model, config, train_loader, optimiser, scheduler):
-    model.train()
-    train_accuracy = 0
-    log_dict = dict()
-    
-    cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
-
-    for x, t, _ in train_loader:
-
-        x = x.to(model.device)
-        t = t.to(model.device)
-
-        c, z = model(x)
-
-        loss = cross_entropy_loss(c, t)
-
-        train_accuracy = accuracy(c, t, task="multiclass", num_classes=config.num_classes)
-        log_dict["Train Accuracy"] = train_accuracy / len(train_loader)
-
-        loss.backward()
-        optimiser.step()
-        optimiser.zero_grad()
-
     wandb.log(log_dict)
-
 
 def test(model, config, test_loader):
     # Recall Memory
@@ -124,6 +98,8 @@ def main():
     model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
+    knn_model = KNNClassifier(config.num_classes, device=model.deivce)
+
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate, momentum=config.momentum, weight_decay=config.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, config.epochs)
 
@@ -132,10 +108,10 @@ def main():
     for epoch in range(config.epochs):
 
         train(model, config, train_loader, optimiser, scheduler)
-        train_classifier(model, config, val_loader, optimiser, scheduler)
 
         if not epoch % 5:
-            test(model, config, test_loader)
+            knn_model.update_feature_bank(val_loader)
+            test(knn_model, config, test_loader)
 
         if not epoch % 5:
             torch.save(model.state_dict(), output_location)
