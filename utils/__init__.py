@@ -144,9 +144,8 @@ class KNNClassifier(nn.Module):
             self.targets_bank, dim=0).t().contiguous()
         self.backbone.train()
 
-    def forward(self, input):
+    def forward(self, x):
         if hasattr(self, 'feature_bank') and hasattr(self, 'targets_bank'):
-            x, targets, _ = input
 
             feature = self.backbone(x).squeeze()
             feature = F.normalize(feature, dim=1)
