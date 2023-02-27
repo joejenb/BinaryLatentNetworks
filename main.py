@@ -66,7 +66,7 @@ def test(model, config, test_loader):
             x = x.to(model.device)
             t = t.to(model.device)
 
-            c, _ = model(x)
+            c = model(x)
 
             loss = cross_entropy_loss(c, t)
 
