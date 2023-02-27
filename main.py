@@ -65,7 +65,7 @@ def test(model, config, test_loader):
 
             c = model(x)
 
-            print(c.size())
+            print(c)
             print(t.size())
 
             test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
