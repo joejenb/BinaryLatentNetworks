@@ -57,15 +57,14 @@ def get_data_loaders(config, PATH):
         config.data_variance = 1
 
     elif config.data_set == "CIFAR10":
-        '''train_set = torchvision.datasets.CIFAR10(root=PATH, train=True, download=True)
+        train_set = torchvision.datasets.CIFAR10(root=PATH, train=True, download=True)
         val_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True)
         test_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True)
-        '''
         config.data_variance = 1
 
-        train_set = LightlyDataset(input_dir=PATH)
-        val_set = LightlyDataset(input_dir=PATH, transform=test_transforms)
-        test_set = LightlyDataset(input_dir=PATH, transform=test_transforms)
+        train_set = LightlyDataset.from_torch_dataset(input_dir=PATH)
+        val_set = LightlyDataset.from_torch_dataset(input_dir=PATH, transform=test_transforms)
+        test_set = LightlyDataset.from_torch_dataset(input_dir=PATH, transform=test_transforms)
 
     collate_fn = SimCLRCollateFunction(
         input_size=config.image_size,
