@@ -54,10 +54,7 @@ def train(model, config, train_loader, optimiser, scheduler):
 def test(model, config, test_loader):
     # Recall Memory
     model.eval() 
-    test_error = 0
     test_accuracy = 0
-
-    cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
     with torch.no_grad():
 
@@ -68,15 +65,9 @@ def test(model, config, test_loader):
 
             c = model(x)
 
-            loss = cross_entropy_loss(c, t)
-
-            test_error += loss.detach()
-
             test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
 
-
     wandb.log({
-            "Test Error": test_error / len(test_loader),
             "Test Accuracy": (test_accuracy) / len(test_loader)
         })
 
