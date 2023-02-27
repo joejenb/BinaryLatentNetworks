@@ -157,4 +157,4 @@ class KNNClassifier(nn.Module):
                 self.knn_k,
                 self.knn_t
             )
-            return pred_labels
+            return pred_labels[:, 0].float()
