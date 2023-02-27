@@ -98,7 +98,7 @@ def main():
     model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
-    knn_model = KNNClassifier(config.num_classes, device=model.deivce)
+    knn_model = KNNClassifier(config.num_classes, device=model.device)
 
     optimiser = optim.SGD(model.parameters(), lr=config.learning_rate, momentum=config.momentum, weight_decay=config.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, config.epochs)
