@@ -129,16 +129,11 @@ class KNNClassifier(nn.Module):
 
         with torch.no_grad():
             for data in dataloader:
-                img, target, _ = data
-                img = img.to(self.device)
+                x, target, _ = data
+                x = x.to(self.device)
                 target = target.to(self.device)
 
-                block_input = img
-                for _, block in enumerate(self.backbone):
-                    block_output = block(block_input)
-                    block_input = block_output
-
-                feature = block_output.squeeze()
+                feature = self.backbone(x).squeeze()
                 feature = F.normalize(feature, dim=1)
                 self.feature_bank.append(feature)
                 self.targets_bank.append(target)
@@ -153,12 +148,7 @@ class KNNClassifier(nn.Module):
         if hasattr(self, 'feature_bank') and hasattr(self, 'targets_bank'):
             x, targets, _ = input
 
-            block_input = x
-            for _, block in enumerate(self.backbone):
-                block_output = block(block_input)
-                block_input = block_output
-
-            feature = block_output.squeeze()
+            feature = self.backbone(x).squeeze()
             feature = F.normalize(feature, dim=1)
             pred_labels = knn_predict(
                 feature,
