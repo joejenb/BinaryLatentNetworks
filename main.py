@@ -26,9 +26,8 @@ def train(model, config, train_loader, optimiser, scheduler):
 
     model.train()
     train_error = 0
-    train_accuracy = 0
+    #log_dict = dict()
     
-    cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
     ntx_ent_loss = NTXentLoss()
 
     for (x0, x1), t, _ in train_loader:
@@ -40,22 +39,50 @@ def train(model, config, train_loader, optimiser, scheduler):
         c0, z0 = model(x0)
         c1, z1 = model(x1)
 
-        loss = ntx_ent_loss(z0, z1) + cross_entropy_loss(c0, t)
+        loss = ntx_ent_loss(z0, z1)
 
         train_error += loss.detach()
-
-        train_accuracy += 0.5 * accuracy(c0, t, task="multiclass", num_classes=config.num_classes)
-        train_accuracy += 0.5 * accuracy(c1, t, task="multiclass", num_classes=config.num_classes)
+        #log_dict["Train Error"] = train_error / len(train_loader)
 
         loss.backward()
         optimiser.step()
         optimiser.zero_grad()
 
     scheduler.step()
-    wandb.log({
-        "Train Error": train_error / len(train_loader),
-        "Train Accuracy": train_accuracy / len(train_loader)
-    })
+    #wandb.log(log_dict)
+
+def train_classifier(model, config, train_loader, optimiser, scheduler):
+    model.train()
+    #train_error = 0
+    train_accuracy = 0
+    log_dict = dict()
+    
+    cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
+    #ntx_ent_loss = NTXentLoss()
+
+    for (x0, x1), t, _ in train_loader:
+
+        x0 = x0.to(model.device)
+        x1 = x1.to(model.device)
+        t = t.to(model.device)
+
+        c0, z0 = model(x0)
+        c1, z1 = model(x1)
+
+        loss = cross_entropy_loss(c0, t)
+
+        train_accuracy += 0.5 * accuracy(c0, t, task="multiclass", num_classes=config.num_classes)
+        train_accuracy += 0.5 * accuracy(c1, t, task="multiclass", num_classes=config.num_classes)
+        log_dict["Train Accuracy"] = train_accuracy / len(train_loader)
+
+        #train_error += loss.detach()
+        #log_dict["Train Error"] = train_error / len(train_loader)
+
+        loss.backward()
+        optimiser.step()
+        optimiser.zero_grad()
+
+    wandb.log(log_dict)
 
 
 def test(model, config, test_loader):
@@ -113,6 +140,7 @@ def main():
     for epoch in range(config.epochs):
 
         train(model, config, train_loader, optimiser, scheduler)
+        train_classifier(model, config, val_loader, optimiser, scheduler)
 
         if not epoch % 5:
             test(model, config, test_loader)
