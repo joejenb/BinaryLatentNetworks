@@ -110,6 +110,7 @@ def main():
         train(model, config, train_loader, optimiser, scheduler)
 
         if not epoch % 5:
+            knn_model.backbone = model.backbone
             knn_model.update_feature_bank(val_loader)
             test(knn_model, config, test_loader)
 
