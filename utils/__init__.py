@@ -8,6 +8,7 @@ from torch.utils.data import random_split
 import torchvision
 from torchvision import transforms
 
+import lightly
 from lightly.data import LightlyDataset
 from lightly.data import SimCLRCollateFunction
 
@@ -39,6 +40,15 @@ def straight_through_round(X):
     return out
 
 def get_data_loaders(config, PATH):
+    test_transforms = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((config.image_size, config.image_size)),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(
+            mean=lightly.data.collate.imagenet_normalize['mean'],
+            std=lightly.data.collate.imagenet_normalize['std'],
+        )
+    ])
+
     if config.data_set == "MNIST":
         train_set = torchvision.datasets.MNIST(root=PATH, train=True, download=True)
         val_set = torchvision.datasets.MNIST(root=PATH, train=False, download=True)
@@ -52,12 +62,18 @@ def get_data_loaders(config, PATH):
         config.data_variance = 1
 
     train_set = LightlyDataset.from_torch_dataset(train_set)
-    val_set = LightlyDataset.from_torch_dataset(val_set, transform=torchvision.transforms.ToTensor())
-    test_set = LightlyDataset.from_torch_dataset(test_set, transform=torchvision.transforms.ToTensor())
+    val_set = LightlyDataset.from_torch_dataset(val_set, transform=test_transforms)
+    test_set = LightlyDataset.from_torch_dataset(test_set, transform=test_transforms)
 
-    collate_fn = SimCLRCollateFunction(input_size=32)
+    collate_fn = SimCLRCollateFunction(
+        input_size=config.image_size,
+        vf_prob=0.5,
+        rr_prob=0.5,
+        cj_prob=0.0,
+        random_gray_scale=0.0
+    )
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=config.batch_size, collate_fn=collate_fn, shuffle=True, drop_last=True, num_workers=8)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=config.batch_size, collate_fn=collate_fn, shuffle=True, drop_last=True)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=config.batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=config.batch_size, shuffle=False)
     

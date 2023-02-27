@@ -52,10 +52,10 @@ def train(model, config, train_loader, optimiser, scheduler):
         optimiser.zero_grad()
 
     scheduler.step()
-    print({
+    wandb.log({
         "Train Error": train_error / len(train_loader),
         "Train Accuracy": train_accuracy / len(train_loader)
-    }, "\n")
+    })
 
 
 def test(model, config, test_loader):
@@ -82,10 +82,10 @@ def test(model, config, test_loader):
             test_accuracy += accuracy(c, t, task="multiclass", num_classes=config.num_classes)
 
 
-    print({
+    wandb.log({
             "Test Error": test_error / len(test_loader),
             "Test Accuracy": (test_accuracy) / len(test_loader)
-        }, "\n")
+        })
 
 
 def main():
@@ -105,8 +105,8 @@ def main():
     model = SimCLR(num_features=config.num_features, num_classes=config.num_classes, device=device).to(device)
     model = load_from_checkpoint(model, checkpoint_location)
 
-    optimiser = optim.SGD(model.parameters(), lr=config.learning_rate)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=config.gamma)
+    optimiser = optim.SGD(model.parameters(), lr=config.learning_rate, momentum=config.momentum, weight_decay=config.weight_decay)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, config.epochs)
 
     wandb.watch(model, log="all")
 
