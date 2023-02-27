@@ -53,30 +53,22 @@ def train(model, config, train_loader, optimiser, scheduler):
 
 def train_classifier(model, config, train_loader, optimiser, scheduler):
     model.train()
-    #train_error = 0
     train_accuracy = 0
     log_dict = dict()
     
     cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
-    #ntx_ent_loss = NTXentLoss()
 
-    for (x0, x1), t, _ in train_loader:
+    for x, t, _ in train_loader:
 
-        x0 = x0.to(model.device)
-        x1 = x1.to(model.device)
+        x = x.to(model.device)
         t = t.to(model.device)
 
-        c0, z0 = model(x0)
-        c1, z1 = model(x1)
+        c, z = model(x)
 
-        loss = cross_entropy_loss(c0, t)
+        loss = cross_entropy_loss(c, t)
 
-        train_accuracy += 0.5 * accuracy(c0, t, task="multiclass", num_classes=config.num_classes)
-        train_accuracy += 0.5 * accuracy(c1, t, task="multiclass", num_classes=config.num_classes)
+        train_accuracy = accuracy(c, t, task="multiclass", num_classes=config.num_classes)
         log_dict["Train Accuracy"] = train_accuracy / len(train_loader)
-
-        #train_error += loss.detach()
-        #log_dict["Train Error"] = train_error / len(train_loader)
 
         loss.backward()
         optimiser.step()
