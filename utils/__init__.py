@@ -62,9 +62,9 @@ def get_data_loaders(config, PATH):
         test_set = torchvision.datasets.CIFAR10(root=PATH, train=False, download=True)
         config.data_variance = 1
 
-        train_set = LightlyDataset.from_torch_dataset(input_dir=PATH)
-        val_set = LightlyDataset.from_torch_dataset(input_dir=PATH, transform=test_transforms)
-        test_set = LightlyDataset.from_torch_dataset(input_dir=PATH, transform=test_transforms)
+        train_set = LightlyDataset.from_torch_dataset(train_set)
+        val_set = LightlyDataset.from_torch_dataset(val_set, transform=test_transforms)
+        test_set = LightlyDataset.from_torch_dataset(test_set, transform=test_transforms)
 
     collate_fn = SimCLRCollateFunction(
         input_size=config.image_size,
